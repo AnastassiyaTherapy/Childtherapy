@@ -1,8 +1,8 @@
-import React, { useState } from 'https://esm.sh/react@18.2.0';
-import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const { useState, useEffect } = React;
+const { createRoot } = ReactDOM;
 
-const supabase = createClient(
+// Подключаемся к вашей базе
+const supabaseClient = window.supabase.createClient(
   'https://ixobpfakfxjnrntaqzmd.supabase.co',
   'sb_publishable_6EexxJWgAoZa7Ikg9c8aYg_urZR-6Jg'
 );
@@ -20,17 +20,19 @@ function App() {
       fetchWaitingList();
       return;
     }
-    const { error } = await supabase.from('sessions').insert([{ child_name: name, status: 'waiting' }]);
+    const { error } = await supabaseClient
+      .from('sessions')
+      .insert([{ child_name: name, status: 'waiting' }]);
     if (!error) setStatus('waiting');
   };
 
   const fetchWaitingList = async () => {
-    const { data } = await supabase.from('sessions').select('*').eq('status', 'waiting');
+    const { data } = await supabaseClient.from('sessions').select('*').eq('status', 'waiting');
     setWaitingList(data || []);
   };
 
   const acceptChild = async (id) => {
-    await supabase.from('sessions').update({ status: 'accepted' }).eq('id', id);
+    await supabaseClient.from('sessions').update({ status: 'accepted' }).eq('id', id);
     fetchWaitingList();
   };
 
@@ -40,27 +42,36 @@ function App() {
         <div>
           <h1>Магический Путь</h1>
           <input 
-            style={{ padding: '15px', borderRadius: '10px', width: '80%', fontSize: '18px', color: 'black' }}
-            placeholder="Имя юного героя" 
+            style={{ padding: '15px', borderRadius: '10px', width: '80%', fontSize: '18px', color: 'black', border: 'none' }}
+            placeholder="Имя героя" 
             onChange={(e) => setName(e.target.value)} 
           />
           <br /><br />
-          <button onClick={enterCave} style={{ padding: '15px 30px', borderRadius: '10px', background: '#4ecca3', color: 'white', border: 'none', fontSize: '18px' }}>
+          <button onClick={enterCave} style={{ padding: '15px 30px', borderRadius: '10px', background: '#4ecca3', color: 'white', border: 'none', fontSize: '18px', cursor: 'pointer', marginTop: '20px' }}>
             Зажечь фонарик
           </button>
         </div>
       )}
-      {status === 'waiting' && <div><h2>Твой свет виден!</h2><p>Мастер скоро откроет проход...</p></div>}
+      
+      {status === 'waiting' && (
+        <div>
+          <h2>Твой свет виден!</h2>
+          <p>Мастер скоро откроет проход...</p>
+        </div>
+      )}
+      
       {status === 'admin' && (
         <div>
           <h2>Кабинет Мастера</h2>
-          {waitingList.map(child => (
-            <div key={child.id} style={{ background: '#16213e', margin: '10px', padding: '15px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between' }}>
-              <span>{child.child_name}</span>
-              <button onClick={() => acceptChild(child.id)} style={{ background: '#e94560', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '5px' }}>Впустить</button>
-            </div>
-          ))}
-          <button onClick={fetchWaitingList} style={{ marginTop: '20px', color: 'gray' }}>Обновить список</button>
+          {waitingList.length === 0 ? <p>Пока никто не ждет входа...</p> : 
+            waitingList.map(child => (
+              <div key={child.id} style={{ background: '#16213e', margin: '10px auto', padding: '15px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '400px' }}>
+                <span>{child.child_name}</span>
+                <button onClick={() => acceptChild(child.id)} style={{ background: '#e94560', border: 'none', color: 'white', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Впустить</button>
+              </div>
+            ))
+          }
+          <button onClick={fetchWaitingList} style={{ marginTop: '30px', padding: '10px', background: 'transparent', color: 'white', border: '1px solid white', borderRadius: '5px', cursor: 'pointer' }}>Обновить список</button>
         </div>
       )}
     </div>
